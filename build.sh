@@ -12,4 +12,3 @@ get_docker_image_from_release osmaster http://${RELEASE_REPO}/docker-osmaster la
 
 docker build $@ -t $IMAGE_NAME:$VERSION .
 docker tag -f $IMAGE_NAME:$VERSION $IMAGE_NAME:latest
-

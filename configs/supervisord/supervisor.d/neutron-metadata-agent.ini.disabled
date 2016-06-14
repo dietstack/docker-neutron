@@ -1,0 +1,2 @@
+[program:neutron-metadata-agent]
+command=neutron-metadata-agent --config-file /etc/neutron/metadata_agent.ini

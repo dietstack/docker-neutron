@@ -1,0 +1,7 @@
+test-and-upload:
+  script: 
+#    - ./test.sh
+    - export IMAGE_NAME=neutron
+    - ci-docker-upload.sh
+  tags:
+    - docker
