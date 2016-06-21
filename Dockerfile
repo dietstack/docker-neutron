@@ -24,7 +24,7 @@ RUN /patches/patch.sh
 
 # Install neutron with dependencies
 RUN cd neutron; apt-get update; \
-    apt-get install -y --no-install-recommends sudo openvswitch-switch dnsmasq dnsmasq-utils iptables; \
+    apt-get install -y --no-install-recommends sudo openvswitch-switch dnsmasq dnsmasq-utils iptables ipset; \
     pip install -r requirements.txt; \
     pip install supervisor mysql-python; \
     python setup.py install; \
