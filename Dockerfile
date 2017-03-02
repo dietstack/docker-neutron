@@ -2,20 +2,18 @@ FROM osmaster
 
 MAINTAINER Kamil Madac (kamil.madac@t-systems.sk)
 
-ENV http_proxy="http://172.27.10.114:3128"
-ENV https_proxy="http://172.27.10.114:3128"
-ENV no_proxy="localhost,127.0.0.1"
+ENV http_proxy="http://172.27.10.114:3128" https_proxy="http://172.27.10.114:3128" no_proxy="localhost,127.0.0.1"
 
 # Source codes to download
-ENV neutron_repo="https://github.com/openstack/neutron"
-ENV neutron_branch="stable/liberty"
-ENV neutron_commit=""
+ENV repo="https://github.com/openstack/neutron" branch="stable/newton" commit=""
 
 # Download neutron source codes
-RUN git clone $neutron_repo --single-branch --branch $neutron_branch;
-
-# Checkout commit, if it was defined above
-RUN if [ ! -z $neutron_commit ]; then cd neutron && git checkout $neutron_commit; fi
+RUN if [ -z $commit ]; then \
+       git clone $repo --single-branch --depth=1 --branch $branch; \
+    else \
+       git clone $repo --single-branch --branch $branch; \
+       cd neutron && git checkout $commit; \
+    fi
 
 # Apply source code patches
 RUN mkdir -p /patches
@@ -24,9 +22,9 @@ RUN /patches/patch.sh
 
 # Install neutron with dependencies
 RUN cd neutron; apt-get update; \
-    apt-get install -y --no-install-recommends sudo openvswitch-switch dnsmasq dnsmasq-utils iptables ipset; \
-    pip install -r requirements.txt; \
-    pip install supervisor mysql-python; \
+    apt-get install -y --no-install-recommends sudo bridge-utils openvswitch-switch dnsmasq dnsmasq-utils iptables ipset ebtables; \
+    pip install -r requirements.txt -c /requirements/upper-constraints.txt; \
+    pip install supervisor python-memcached; \
     python setup.py install; \
     apt-get clean; \
     rm -rf /var/lib/apt/lists/*

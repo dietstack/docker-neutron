@@ -48,12 +48,8 @@ get_docker_image_from_release() {
     else
         echo "Docker image ${image_name}:${version} found in local repository."
     fi
-    # if latest is not assigned to requested version, tag it
-    latest_id=$(docker images | grep ${image_name} | grep latest | awk '{print $3}')
-    tag_id=$(docker images | grep ${image_name} | grep ${version} | awk '{print $3}')
-    if [[ "$latest_id" != "$tag_id" ]]; then
-        docker tag -f ${image_name}:${version} ${image_name}:latest
-    fi
+    dimage=$(docker images | grep ${image_name} | grep ${version} | awk '{print $1}')
+    docker tag ${dimage}:${version} ${image_name}:latest
 }
 
 create_keystone_db() {
@@ -83,5 +79,3 @@ create_neutron_db() {
     $MYSQL_CMD -e "CREATE USER 'neutron'@'%' IDENTIFIED BY 'veryS3cr3t';"
     $MYSQL_CMD -e "GRANT ALL PRIVILEGES ON neutron.* TO 'neutron'@'%' WITH GRANT OPTION;"
 }
-
-
