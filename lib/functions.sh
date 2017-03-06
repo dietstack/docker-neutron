@@ -52,6 +52,25 @@ get_docker_image_from_release() {
     docker tag ${dimage}:${version} ${image_name}:latest
 }
 
+
+
+create_db_osadmin() {
+    # Usage: create_db_osadmin keystone keystone veryS3cr3t veryS3cr3t
+    local DB_NAME=$1
+    local USER_NAME=$2
+    local ROOT_DB_PASSWD=$3
+    local SVC_DB_PASSWD=$4
+    MYSQL_CMD="docker run --net=host osadmin mysql -h 127.0.0.1 -P 3306 -u root -p$ROOT_DB_PASSWD"
+    $MYSQL_CMD -e "CREATE DATABASE $DB_NAME;"
+    $MYSQL_CMD -e "CREATE USER '$USER_NAME'@'%' IDENTIFIED BY '$SVC_DB_PASSWD';"
+    $MYSQL_CMD -e "GRANT ALL PRIVILEGES ON $DB_NAME.* TO '$USER_NAME'@'%' WITH GRANT OPTION;"
+}
+
+
+#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# Following functions are deprecated in favor of osadmin version defined above #
+#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 create_keystone_db() {
     MYSQL_CMD="mysql -h 127.0.0.1 -P 3306 -u root -pveryS3cr3t"
     $MYSQL_CMD -e "CREATE DATABASE keystone;"
@@ -68,8 +87,10 @@ create_glance_db() {
 
 create_nova_db() {
     MYSQL_CMD="mysql -h 127.0.0.1 -P 3306 -u root -pveryS3cr3t"
+    $MYSQL_CMD -e "CREATE DATABASE nova_api;"
     $MYSQL_CMD -e "CREATE DATABASE nova;"
     $MYSQL_CMD -e "CREATE USER 'nova'@'%' IDENTIFIED BY 'veryS3cr3t';"
+    $MYSQL_CMD -e "GRANT ALL PRIVILEGES ON nova_api.* TO 'nova'@'%' WITH GRANT OPTION;"
     $MYSQL_CMD -e "GRANT ALL PRIVILEGES ON nova.* TO 'nova'@'%' WITH GRANT OPTION;"
 }
 
@@ -79,3 +100,4 @@ create_neutron_db() {
     $MYSQL_CMD -e "CREATE USER 'neutron'@'%' IDENTIFIED BY 'veryS3cr3t';"
     $MYSQL_CMD -e "GRANT ALL PRIVILEGES ON neutron.* TO 'neutron'@'%' WITH GRANT OPTION;"
 }
+
