@@ -1,7 +1,28 @@
+variables:
+  APP_NAME: neutron
+
+before_script:
+    - docker ps -qa | xargs docker stop || true
+    - docker ps -qa | xargs docker rm || true
+    - docker images -qa | uniq  | xargs docker rmi -f || true
+
+after_script:
+    - docker ps -qa | xargs docker stop || true
+    - docker ps -qa | xargs docker rm || true
+    - docker images -qa | uniq  | xargs docker rmi -f || true
+
 test-and-upload:
-  script: 
-    - ./test.sh
-    - export IMAGE_NAME=neutron
+  script:
+    - ./test.sh --no-cache
+    - export REPO=`echo $CI_PROJECT_DIR | awk -F "/" '{print $(NF-1)"/"$NF}'`
+    - export VERSION=`git describe --abbrev=7 --tags`
+    - docker login -u gitlab-ci-token -p $CI_BUILD_TOKEN $REGISTRY
+    - docker tag $APP_NAME:$VERSION $REGISTRY/$REPO:$VERSION
+    - docker tag $APP_NAME:$VERSION $REGISTRY/$REPO:latest
+    - docker push $REGISTRY/$REPO:$VERSION
+    - docker push $REGISTRY/$REPO:latest
+    - docker logout $REGISTRY
     - ci-docker-upload.sh
   tags:
     - docker
+
