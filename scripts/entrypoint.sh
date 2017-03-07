@@ -37,12 +37,19 @@ KEYSTONE_HOST=${KEYSTONE_HOST:-127.0.0.1}
 NOVA_HOST=${NOVA_HOST:-127.0.0.1}
 MEMCACHED_SERVERS=${MEMCACHED_SERVERS:-127.0.0.1:11211}
 
-PROVIDER_INTERFACE=${PROVIDER_INTERFACE:-lo}
-ip a s | grep -q $PROVIDER_INTERFACE || { echo "Provider interface $PROVIDER_INTERFACE not found!" && exit 100; }
+PROVIDER_MAPPINGS=${PROVIDER_MAPPINGS:-''}
+
+EXTERNAL_BRIDGE=${EXTERNAL_BRIDGE:-'br-ex'}
+ip a s | grep -q $EXTERNAL_BRIDGE || { brctl addbr $EXTERNAL_BRIDGE && ip link set dev $EXTERNAL_BRIDGE up; }
 OVERLAY_INTERFACE=${OVERLAY_INTERFACE:-lo}
 ip a s | grep -q $OVERLAY_INTERFACE || { echo "Overlay interface $OVERLAY_INTERFACE not found!" && exit 101; }
 OVERLAY_INTERFACE_IP_ADDRESS=$(/sbin/ip addr show dev $OVERLAY_INTERFACE | /usr/bin/awk 'BEGIN {FS="[/ ]+"} /inet/ {print $3; exit}')
 test -z $OVERLAY_INTERFACE_IP_ADDRESS && { echo "Overlay IP address not found!" && exit 102; }
+
+if [[ $NEUTRON_CONTROLLER == "true" ]]; then
+    # if controller which is also network node, add external bridge to mappings
+    EXTERNAL_BRIDGE_MAPPING="external:$EXTERNAL_BRIDGE"
+fi
 
 LOG_MESSAGE="Docker start script:"
 OVERRIDE=0
@@ -50,7 +57,7 @@ CONF_DIR="/etc/neutron"
 SUPERVISOR_CONF_DIR="/etc/supervisor.d"
 OVERRIDE_DIR="/neutron-override"
 CONF_FILES=(`cd $CONF_DIR; find . -maxdepth 3 -type f`)
-CONTROL_SRVCS="neutron-server neutron-dhcp-agent neutron-l3-agent neutron-metadata-agent"
+CONTROL_SRVCS="neutron-server neutron-dhcp-agent neutron-l3-agent neutron-metadata-agent neutron-linuxbridge-agent"
 COMPUTE_SRVCS="neutron-linuxbridge-agent"
 
 INSECURE=${INSECURE:-true}
@@ -82,7 +89,8 @@ if [[ $OVERRIDE -eq 0 ]]; then
                 sed -i "s/\b_NOVA_HOST_\b/$NOVA_HOST/" $CONF_DIR/$CONF
                 sed -i "s/\b_MEMCACHED_SERVERS_\b/$MEMCACHED_SERVERS/" $CONF_DIR/$CONF
                 sed -i "s/\b_INSECURE_\b/$INSECURE/" $CONF_DIR/$CONF
-                sed -i "s/\b_PROVIDER_INTERFACE_\b/$PROVIDER_INTERFACE/" $CONF_DIR/$CONF
+                sed -i "s/\b_EXTERNAL_BRIDGE_MAPPING_\b/$EXTERNAL_BRIDGE_MAPPING/" $CONF_DIR/$CONF
+                sed -i "s/\b_PROVIDER_MAPPINGS_\b/$PROVIDER_MAPPINGS/" $CONF_DIR/$CONF
                 sed -i "s/\b_OVERLAY_INTERFACE_IP_ADDRESS_\b/$OVERLAY_INTERFACE_IP_ADDRESS/" $CONF_DIR/$CONF
                 sed -i "s/\b_NEUTRON_METADATA_SECRET_\b/$NEUTRON_METADATA_SECRET/" $CONF_DIR/$CONF
         done

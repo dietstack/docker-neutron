@@ -28,7 +28,7 @@ cleanup() {
 wait_for_linuxbridge() {
     local timeout=$1
     local counter=0
-    echo "Wait till linuxbridge afent is registred to neutron..."
+    echo "Wait till linuxbridge agent is registred to neutron..."
     while [[ $counter -lt $timeout ]]; do
         local counter=$[counter + 5]
         local OUT=$(docker run --net=host osadmin /bin/bash -c ". /app/adminrc; openstack network agent list --format csv | grep neutron-linuxbridge-agent | cut -d"," -f 6" | tail -n 1)
@@ -119,6 +119,7 @@ docker run -d --net=host --privileged \
            -e DEBUG="true" \
            -e DB_SYNC="true" \
            -e NEUTRON_CONTROLLER="true" \
+           -e EXTERNAL_BRIDGE="br-ex" \
            -v /run/netns:/run/netns:shared \
            --name ${CONT_PREFIX}_neutron-controller \
            neutron:latest
@@ -134,9 +135,9 @@ echo "Starting neutron-compute container"
 docker run -d --net=host --privileged \
            -e DEBUG="true" \
            -e NEUTRON_CONTROLLER="false" \
-           -e PROVIDER_INTERFACE="br-ex" \
            --name ${CONT_PREFIX}_neutron-compute \
            neutron:latest
+
 
 wait_for_linuxbridge 120
 
