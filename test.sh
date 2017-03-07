@@ -31,7 +31,7 @@ wait_for_linuxbridge() {
     echo "Wait till linuxbridge afent is registred to neutron..."
     while [[ $counter -lt $timeout ]]; do
         local counter=$[counter + 5]
-        local OUT=$(docker run --net=host osadmin /bin/bash -c ". /app/userrc; openstack network agent list --format csv | grep neutron-linuxbridge-agent | cut -d"," -f 6" | tail -n 1)
+        local OUT=$(docker run --net=host osadmin /bin/bash -c ". /app/adminrc; openstack network agent list --format csv | grep neutron-linuxbridge-agent | cut -d"," -f 6" | tail -n 1)
         if [[ $OUT != '"UP"' ]]; then
             echo -n ". "
         else
@@ -107,7 +107,7 @@ if [ $ret -ne 0 ]; then
 fi
 
 # bootstrap keystone data (endpoints/users/services)
-docker run --net=host osadmin /bin/bash -c ". /app/adminrc; bash /app/bootstrap.sh"
+docker run --net=host osadmin /bin/bash -c ". /app/tokenrc; bash /app/bootstrap.sh"
 ret=$?
 if [ $ret -ne 0 ]; then
     echo "Error: Keystone bootstrap error ${ret}!"
