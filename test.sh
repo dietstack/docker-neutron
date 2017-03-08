@@ -5,6 +5,7 @@
 GIT_REPO=172.27.10.10
 RELEASE_REPO=172.27.9.130
 CONT_PREFIX=test
+BRANCH=master
 
 . lib/functions.sh
 
@@ -50,19 +51,19 @@ cleanup
 ##### Download/Build containers
 
 # pull galera docker image
-get_docker_image_from_release galera http://${RELEASE_REPO}/docker-galera latest
+get_docker_image_from_release galera http://${RELEASE_REPO}/docker-galera/${BRANCH} latest
 
 # pull rabbitmq docker image
-get_docker_image_from_release rabbitmq http://${RELEASE_REPO}/docker-rabbitmq latest
+get_docker_image_from_release rabbitmq http://${RELEASE_REPO}/docker-rabbitmq/${BRANCH} latest
 
 # pull osmaster docker image
-get_docker_image_from_release osmaster http://${RELEASE_REPO}/docker-osmaster latest
+get_docker_image_from_release osmaster http://${RELEASE_REPO}/docker-osmaster/${BRANCH} latest
 
 # pull keystone image
-get_docker_image_from_release keystone http://${RELEASE_REPO}/docker-keystone latest
+get_docker_image_from_release keystone http://${RELEASE_REPO}/docker-keystone/${BRANCH} latest
 
 # pull osadmin docker image
-get_docker_image_from_release osadmin http://${RELEASE_REPO}/docker-osadmin latest
+get_docker_image_from_release osadmin http://${RELEASE_REPO}/docker-osadmin/${BRANCH} latest
 
 ##### Start Containers
 
