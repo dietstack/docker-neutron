@@ -24,7 +24,7 @@ RUN /patches/patch.sh
 RUN cd neutron; apt-get update; \
     apt-get install -y --no-install-recommends sudo bridge-utils openvswitch-switch dnsmasq dnsmasq-utils iptables ipset ebtables; \
     pip install -r requirements.txt -c /requirements/upper-constraints.txt; \
-    pip install supervisor python-memcached; \
+    pip install supervisor python-memcached py2-ipaddress; \
     python setup.py install; \
     apt-get clean; \
     rm -rf /var/lib/apt/lists/*

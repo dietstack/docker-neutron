@@ -39,14 +39,36 @@ MEMCACHED_SERVERS=${MEMCACHED_SERVERS:-127.0.0.1:11211}
 
 PROVIDER_MAPPINGS=${PROVIDER_MAPPINGS:-''}
 
+# If EXTERNAL_BRIDGE is defined, lets create it
+# You do not want to define EXTERNAL_BRIDGE if you are running container of compute node.
+# If EXTERNAL_BRIDGE_IP is defined add it to EXTERNAL_BRIDGE (usable when you need connect from
+# host where neutron containers and vms are runnning to floating IPs).
+# For example: when floating IPs pool is 192.168.2.10-192.168.2.150, then
+# EXTERNAL_BRIDGE_IP should be 192.168.2.1/24 (prefix is important).
+# If you have accessible subnet from outside of your host you do NOT need EXTERNAL_BRIDGE_IP,
+# but you need to add interface where the floating IP subnet is routable add to EXTERNAL_BRIDGE.
+# TODO: That adding will be automated in the future.
+
 EXTERNAL_BRIDGE=${EXTERNAL_BRIDGE:-'br-ex'}
-ip a s | grep -q $EXTERNAL_BRIDGE || { brctl addbr $EXTERNAL_BRIDGE && ip link set dev $EXTERNAL_BRIDGE up; }
+EXTERNAL_BRIDGE_IP=${EXTERNAL_BRIDGE_IP:-''}
+if [[ ! -z $EXTERNAL_BRIDGE ]]; then
+    ip a s | grep -q $EXTERNAL_BRIDGE || { brctl addbr $EXTERNAL_BRIDGE && ip link set dev $EXTERNAL_BRIDGE up; }
+    if [[ ! -z $EXTERNAL_BRIDGE_IP ]]; then
+        if [[ `ip addr | awk '/inet/ && /eth0/{sub(/\/.*$/,"",$2); print $2}'` != "$EXTERNAL_BRIDGE_IP" ]]; then
+            ip addr add $EXTERNAL_BRIDGE_IP dev $EXTERNAL_BRIDGE
+            EXTERN_NET=$(python -c "import ipaddress; print(str(ipaddress.IPv4Network('192.168.2.0/24')))")
+            ip route add $EXTERN_NET dev $EXTERNAL_BRIDGE
+        fi
+    fi
+fi
+# Overlay interface is interface which will be used for vxlan tunnels between nodes
+# lo interface is used when all containers are running on one node
 OVERLAY_INTERFACE=${OVERLAY_INTERFACE:-lo}
 ip a s | grep -q $OVERLAY_INTERFACE || { echo "Overlay interface $OVERLAY_INTERFACE not found!" && exit 101; }
-OVERLAY_INTERFACE_IP_ADDRESS=$(/sbin/ip addr show dev $OVERLAY_INTERFACE | /usr/bin/awk 'BEGIN {FS="[/ ]+"} /inet/ {print $3; exit}')
+OVERLAY_INTERFACE_IP_ADDRESS=$(ip addr show dev $OVERLAY_INTERFACE | awk 'BEGIN {FS="[/ ]+"} /inet/ {print $3; exit}')
 test -z $OVERLAY_INTERFACE_IP_ADDRESS && { echo "Overlay IP address not found!" && exit 102; }
 
-if [[ $NEUTRON_CONTROLLER == "true" ]]; then
+if [[ ! -z $EXTERNAL_BRIDGE ]]; then
     # if controller which is also network node, add external bridge to mappings
     EXTERNAL_BRIDGE_MAPPING="external:$EXTERNAL_BRIDGE"
 fi
@@ -57,7 +79,7 @@ CONF_DIR="/etc/neutron"
 SUPERVISOR_CONF_DIR="/etc/supervisor.d"
 OVERRIDE_DIR="/neutron-override"
 CONF_FILES=(`cd $CONF_DIR; find . -maxdepth 3 -type f`)
-CONTROL_SRVCS="neutron-server neutron-dhcp-agent neutron-l3-agent neutron-metadata-agent neutron-linuxbridge-agent"
+CONTROL_SRVCS="neutron-server neutron-dhcp-agent neutron-l3-agent neutron-metadata-agent"
 COMPUTE_SRVCS="neutron-linuxbridge-agent"
 
 INSECURE=${INSECURE:-true}
