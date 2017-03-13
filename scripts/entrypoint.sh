@@ -54,7 +54,7 @@ EXTERNAL_BRIDGE_IP=${EXTERNAL_BRIDGE_IP:-''}
 if [[ ! -z $EXTERNAL_BRIDGE ]]; then
     ip a s | grep -q $EXTERNAL_BRIDGE || { brctl addbr $EXTERNAL_BRIDGE && ip link set dev $EXTERNAL_BRIDGE up; }
     if [[ ! -z $EXTERNAL_BRIDGE_IP ]]; then
-        if [[ `ip addr | awk '/inet/ && /$EXTERNAL_BRIDGE/{sub(/\/.*$/,"",$2); print $2}' | egrep -v '^$'` != "$EXTERNAL_BRIDGE_IP" ]]; then
+        if [[ `ip addr | awk '/inet/ && /'"$EXTERNAL_BRIDGE"'/{sub(/\/.*$/,"",$2); print $2}' | egrep -v '^$'` != "$EXTERNAL_BRIDGE_IP" ]]; then
             ip addr add $EXTERNAL_BRIDGE_IP dev $EXTERNAL_BRIDGE
             EXTERN_NET=$(python -c "import ipaddress; print(str(ipaddress.IPv4Network('192.168.2.0/24')))")
             ip route add $EXTERN_NET dev $EXTERNAL_BRIDGE
