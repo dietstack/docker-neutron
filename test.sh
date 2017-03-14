@@ -63,7 +63,7 @@ get_docker_image_from_release osmaster http://${RELEASE_REPO}/docker-osmaster/${
 get_docker_image_from_release keystone http://${RELEASE_REPO}/docker-keystone/${BRANCH} latest
 
 # pull osadmin docker image
-get_docker_image_from_release osadmin http://${RELEASE_REPO}/docker-osadmin/${BRANCH} latest
+#get_docker_image_from_release osadmin http://${RELEASE_REPO}/docker-osadmin/${BRANCH} latest
 
 ##### Start Containers
 
@@ -120,7 +120,6 @@ docker run -d --net=host --privileged \
            -e DEBUG="true" \
            -e DB_SYNC="true" \
            -e NEUTRON_CONTROLLER="true" \
-           -e EXTERNAL_BRIDGE="br-ex" \
            -v /run/netns:/run/netns:shared \
            --name ${CONT_PREFIX}_neutron-controller \
            neutron:latest

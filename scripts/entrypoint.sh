@@ -39,31 +39,55 @@ MEMCACHED_SERVERS=${MEMCACHED_SERVERS:-127.0.0.1:11211}
 
 PROVIDER_MAPPINGS=${PROVIDER_MAPPINGS:-''}
 
-# If EXTERNAL_BRIDGE is defined, lets create it
-# You do not want to define EXTERNAL_BRIDGE if you are running container of compute node.
-# If EXTERNAL_BRIDGE_IP is defined add it to EXTERNAL_BRIDGE (usable when you need connect from
-# host where neutron containers and vms are runnning to floating IPs).
-# For example: when floating IPs pool is 192.168.2.10-192.168.2.150, then
-# EXTERNAL_BRIDGE_IP should be 192.168.2.1/24 (prefix is important).
-# If you have accessible subnet from outside of your host you do NOT need EXTERNAL_BRIDGE_IP,
-# but you need to add interface where the floating IP subnet is routable add to EXTERNAL_BRIDGE.
-# TODO: That adding will be automated in the future.
+#################################################################################################
+# NETWORKING DOC (kmadac)
+#################################################################################################
+# DEFAULT_INTERFACE is interface where default gateway packets goes and is automatically detected.
+# EXTERNAL_INTERFACE needs to be defined. If it is not, it'll be DEFAULT_INTERFACE
+# EXTERNAL_INTERFACE is interface where floating ips are accessible over
+# EXTERNAL_INTERFACE_IP is IP address which will be assigned to EXTERNAL_INTERFACE
+# EXTERNAL_INTERFACE_IP must be in iproute2 interface format - 192.168.99.1/24
+# It has to use cases:
+#    1. You would like to access VMs running on your host from your the same host,
+#       and you don't want to access it from outside. Then do not set EXTERNAL_INTERFACE_IP, and
+#       floating IP range will be 192.168.99.10-192.168.99.245
+#    2. You would like to access VMs running on your host from outside of the host.
+#       You need to set EXTERNAL_INTERFACE_IP to address which is externally routable.
+#       It can be IP address which is set on interface already. If it doesn't exists, entrypoint.sh
+#       will add it to interface. If no EXTERNAL_INTERFACE_IP is set, no IP will be added or checked.
+# PROVIDER_MAPPINGS is used if you would like to use provider networks. Format: prod:vlan666
+###################################################################################################
 
-EXTERNAL_BRIDGE=${EXTERNAL_BRIDGE:-'br-ex'}
-EXTERNAL_BRIDGE_IP=${EXTERNAL_BRIDGE_IP:-''}
-if [[ ! -z $EXTERNAL_BRIDGE ]]; then
-    ip a s | grep -q $EXTERNAL_BRIDGE || { brctl addbr $EXTERNAL_BRIDGE && ip link set dev $EXTERNAL_BRIDGE up; }
-    if [[ ! -z $EXTERNAL_BRIDGE_IP ]]; then
-        if [[ `ip addr | awk '/inet/ && /'"$EXTERNAL_BRIDGE"'/{sub(/\/.*$/,"",$2); print $2}' | egrep -v '^$'` != "$EXTERNAL_BRIDGE_IP" ]]; then
-            ip addr add $EXTERNAL_BRIDGE_IP dev $EXTERNAL_BRIDGE
-            EXTERN_NET=$(python -c "import ipaddress; print(str(ipaddress.IPv4Network('192.168.2.0/24')))")
-            ip route add $EXTERN_NET dev $EXTERNAL_BRIDGE
+DEFAULT_INTERFACE=$(cat /proc/net/route | awk '{print $1 " " $2}' | grep 00000000 | awk '{print $1}')
+echo "DEFAULT_INTERFACE = $DEFAULT_INTERFACE"
+EXTERNAL_INTERFACE=${EXTERNAL_INTERFACE:-$DEFAULT_INTERFACE}
+echo "EXTERNAL_INTERFACE = $EXTERNAL_INTERFACE"
+
+EXTERNAL_INTERFACE_IP=${EXTERNAL_INTERFACE_IP:-'192.168.99.1/24'}
+echo "EXTERNAL_INTERFACE_IP = $EXTERNAL_INTERFACE_IP"
+
+if [[ ! -z $EXTERNAL_INTERFACE ]]; then
+    if [[ ! -z $EXTERNAL_INTERFACE_IP ]]; then
+        if [[ ! `ip addr | awk '/inet/ && /'"$EXTERNAL_INTERFACE"'/{print $2}' | grep "$EXTERNAL_INTERFACE_IP"` ]]; then
+            ip addr add $EXTERNAL_INTERFACE_IP dev $EXTERNAL_INTERFACE
+#            EXTERN_NET=$(python -c "import os; import ipaddress; print(str(ipaddress.IPv4Interface(os.environ['EXTERNAL_INTERFACE_IP']).network))")
+#            ip route add $EXTERN_NET dev $EXTERNAL_INTERFACE
         fi
     fi
+    if [[ -z $PROVIDER_MAPPINGS ]]; then
+        PROVIDER_MAPPINGS="external:$EXTERNAL_INTERFACE"
+    else
+        PROVIDER_MAPPINGS+=",external:$EXTERNAL_INTERFACE"
+    fi
+else
+    echo "WARNING: EXTERNAL_INTERFACE not defined and could not be detected."
 fi
+
+
 # Overlay interface is interface which will be used for vxlan tunnels between nodes
 # lo interface is used when all containers are running on one node
-OVERLAY_INTERFACE=${OVERLAY_INTERFACE:-lo}
+# if you want multinode installation change it to real interface
+OVERLAY_INTERFACE=${OVERLAY_INTERFACE:-"$DEFAULT_INTERFACE"}
 ip a s | grep -q $OVERLAY_INTERFACE || { echo "Overlay interface $OVERLAY_INTERFACE not found!" && exit 101; }
 OVERLAY_INTERFACE_IP_ADDRESS=$(ip addr show dev $OVERLAY_INTERFACE | awk 'BEGIN {FS="[/ ]+"} /inet/ {print $3; exit}')
 test -z $OVERLAY_INTERFACE_IP_ADDRESS && { echo "Overlay IP address not found!" && exit 102; }
