@@ -120,6 +120,8 @@ docker run -d --net=host --privileged \
            -e DEBUG="true" \
            -e DB_SYNC="true" \
            -e NEUTRON_CONTROLLER="true" \
+           -e EXTERNAL_BRIDGE="br-ex" \
+           -e EXTERNAL_IP="192.168.99.1/24" \
            -v /run/netns:/run/netns:shared \
            --name ${CONT_PREFIX}_neutron-controller \
            neutron:latest
@@ -135,6 +137,7 @@ echo "Starting neutron-compute container"
 docker run -d --net=host --privileged \
            -e DEBUG="true" \
            -e NEUTRON_CONTROLLER="false" \
+           -e EXTERNAL_BRIDGE="br-ex" \
            --name ${CONT_PREFIX}_neutron-compute \
            neutron:latest
 
