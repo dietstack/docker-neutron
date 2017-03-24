@@ -39,6 +39,8 @@ MEMCACHED_SERVERS=${MEMCACHED_SERVERS:-127.0.0.1:11211}
 
 PROVIDER_MAPPINGS=${PROVIDER_MAPPINGS:-''}
 
+INSECURE=${INSECURE:-true}
+
 #################################################################################################
 # NETWORKING DOC (kmadac)
 #################################################################################################
@@ -85,8 +87,6 @@ OVERRIDE_DIR="/neutron-override"
 CONF_FILES=(`cd $CONF_DIR; find . -maxdepth 3 -type f`)
 CONTROL_SRVCS="neutron-server neutron-dhcp-agent neutron-l3-agent neutron-metadata-agent"
 COMPUTE_SRVCS="neutron-linuxbridge-agent"
-
-INSECURE=${INSECURE:-true}
 
 # check if external configs are provided
 echo "$LOG_MESSAGE Checking if external config is provided.."
