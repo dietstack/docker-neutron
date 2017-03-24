@@ -9,6 +9,8 @@ BRANCH=master
 
 . lib/functions.sh
 
+http_proxy_args="-e http_proxy=${http_proxy:-} -e https_proxy=${https_proxy:-} -e no_proxy=${no_proxy:-}"
+
 cleanup() {
     echo "Clean up ..."
     docker stop ${CONT_PREFIX}_galera
@@ -32,7 +34,7 @@ wait_for_linuxbridge() {
     echo "Wait till linuxbridge agent is registred to neutron..."
     while [[ $counter -lt $timeout ]]; do
         local counter=$[counter + 5]
-        local OUT=$(docker run --net=host osadmin /bin/bash -c ". /app/adminrc; openstack network agent list --format csv | grep neutron-linuxbridge-agent | cut -d"," -f 6" | tail -n 1)
+        local OUT=$(docker run --net=host --rm $http_proxy_args osadmin /bin/bash -c ". /app/adminrc; openstack network agent list --format csv | grep neutron-linuxbridge-agent | cut -d"," -f 6" | tail -n 1)
         if [[ $OUT != '"UP"' ]]; then
             echo -n ". "
         else
@@ -89,7 +91,11 @@ create_db_osadmin keystone keystone veryS3cr3t veryS3cr3t
 create_db_osadmin neutron neutron veryS3cr3t veryS3cr3t
 
 echo "Starting keystone container"
-docker run -d --net=host -e DEBUG="true" -e DB_SYNC="true" --name ${CONT_PREFIX}_keystone keystone:latest
+docker run -d --net=host \
+           -e DEBUG="true" \
+           -e DB_SYNC="true" \
+           $http_proxy_args \
+           --name ${CONT_PREFIX}_keystone keystone:latest
 
 echo "Wait till keystone is running ."
 
@@ -108,12 +114,18 @@ if [ $ret -ne 0 ]; then
 fi
 
 # bootstrap keystone data (endpoints/users/services)
-docker run --net=host osadmin /bin/bash -c ". /app/tokenrc; bash /app/bootstrap.sh"
+docker run --net=host --rm \
+           $http_proxy_args osadmin /bin/bash -c ". /app/tokenrc; bash /app/bootstrap.sh"
+
 ret=$?
 if [ $ret -ne 0 ]; then
     echo "Error: Keystone bootstrap error ${ret}!"
     exit $ret
 fi
+
+
+echo "Configure External Networking ..."
+ip a s | grep -q br-ex || { brctl addbr br-ex && ip link set dev br-ex up; }
 
 echo "Starting neutron-controller container"
 docker run -d --net=host --privileged \
@@ -122,6 +134,7 @@ docker run -d --net=host --privileged \
            -e NEUTRON_CONTROLLER="true" \
            -e EXTERNAL_BRIDGE="br-ex" \
            -e EXTERNAL_IP="192.168.99.1/24" \
+           $http_proxy_args \
            -v /run/netns:/run/netns:shared \
            --name ${CONT_PREFIX}_neutron-controller \
            neutron:latest
@@ -138,6 +151,7 @@ docker run -d --net=host --privileged \
            -e DEBUG="true" \
            -e NEUTRON_CONTROLLER="false" \
            -e EXTERNAL_BRIDGE="br-ex" \
+           $http_proxy_args \
            --name ${CONT_PREFIX}_neutron-compute \
            neutron:latest
 

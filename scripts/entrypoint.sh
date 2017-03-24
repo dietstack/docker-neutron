@@ -57,7 +57,7 @@ EXTERNAL_INTERFACE=${EXTERNAL_INTERFACE:-''}
 echo "EXTERNAL_INTERFACE = $EXTERNAL_INTERFACE"
 
 if [[ ! -z $EXTERNAL_BRIDGE ]]; then
-    ip a s | grep -q $EXTERNAL_BRIDGE || { echo "EXTERNAL_BRIDGE $EXTERNAL_BRIDGE not found"} && exit 1; }
+    ip a s | grep -q $EXTERNAL_BRIDGE || { echo "EXTERNAL_BRIDGE $EXTERNAL_BRIDGE not found!" && exit 1; }
     EXTERNAL_BRIDGE_MAPPING="external:$EXTERNAL_BRIDGE"
 elif [[ ! -z $EXTERNAL_INTERFACE ]]; then
     ip a s | grep -q $EXTERNAL_INTERFACE || { echo "EXTERNAL_INTERFACE $EXTERNAL_INTERFACE not found"} && exit 1; }
