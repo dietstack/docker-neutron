@@ -43,6 +43,7 @@ COPY configs/supervisord/supervisor.d/* /etc/supervisor.d/
 
 # external volumes
 VOLUME /neutron-override
+VOLUME  /lib/modules
 
 # copy startup scripts
 COPY scripts /app

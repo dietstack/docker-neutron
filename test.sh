@@ -135,6 +135,7 @@ docker run -d --net=host --privileged \
            -e EXTERNAL_BRIDGE="br-ex" \
            -e EXTERNAL_IP="192.168.99.1/24" \
            $http_proxy_args \
+           -v /lib/modules:/lib/modules \
            -v /run/netns:/run/netns:shared \
            --name ${CONT_PREFIX}_neutron-controller \
            neutron:latest
@@ -142,6 +143,8 @@ docker run -d --net=host --privileged \
 wait_for_port 9696 60
 ret=$?
 if [ $ret -ne 0 ]; then
+    echo "Logs of container ${CONT_PREFIX}_neutron-controller"
+    docker logs ${CONT_PREFIX}_neutron-controller | tail -n 10
     echo "Error: Port 9696 (neutron server) not bounded!"
     exit $ret
 fi
@@ -152,11 +155,20 @@ docker run -d --net=host --privileged \
            -e NEUTRON_CONTROLLER="false" \
            -e EXTERNAL_BRIDGE="br-ex" \
            $http_proxy_args \
+           -v /lib/modules:/lib/modules \
            --name ${CONT_PREFIX}_neutron-compute \
            neutron:latest
 
 
 wait_for_linuxbridge 120
+ret=$?
+if [ $ret -ne 0 ]; then
+    echo "Logs of container ${CONT_PREFIX}_neutron-compute"
+    docker logs ${CONT_PREFIX}_neutron-compute | tail -n 10
+    echo "Error: Linux compute container not registered to controller!"
+    exit $ret
+fi
+
 
 echo "======== Success :) ========="
 
