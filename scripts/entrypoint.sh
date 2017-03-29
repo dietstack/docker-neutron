@@ -51,6 +51,11 @@ INSECURE=${INSECURE:-true}
 # PROVIDER_MAPPINGS is used if you would like to use provider networks. Format: prod:vlan666
 ###################################################################################################
 
+# enable necessary networking kernel module (needed for minimal debian jessie installation)
+lsmod | grep -q ebtables || modprobe ebtables
+lsmod | grep -q ip_tables || modprobe ip_tables
+lsmod | grep -q ip6_tables || modprobe ip6_tables
+
 EXTERNAL_BRIDGE=${EXTERNAL_BRIDGE:-''}
 echo "EXTERNAL_BRIDGE = $EXTERNAL_BRIDGE"
 EXTERNAL_INTERFACE=${EXTERNAL_INTERFACE:-''}
