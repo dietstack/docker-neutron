@@ -140,7 +140,7 @@ docker run -d --net=host --privileged \
            --name ${CONT_PREFIX}_neutron-controller \
            neutron:latest
 
-wait_for_port 9696 60
+wait_for_port 9696 120
 ret=$?
 if [ $ret -ne 0 ]; then
     echo "Logs of container ${CONT_PREFIX}_neutron-controller"

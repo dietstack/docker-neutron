@@ -130,11 +130,15 @@ fi
 
 if [[ $NEUTRON_CONTROLLER == "true" ]]; then
         for SRVC in $CONTROL_SRVCS; do
-            mv ${SUPERVISOR_CONF_DIR}/${SRVC}.ini.disabled ${SUPERVISOR_CONF_DIR}/${SRVC}.ini
+            if [[ -f ${SUPERVISOR_CONF_DIR}/${SRVC}.ini.disabled ]]; then
+                mv ${SUPERVISOR_CONF_DIR}/${SRVC}.ini.disabled ${SUPERVISOR_CONF_DIR}/${SRVC}.ini
+            fi
         done
 else
         for SRVC in $COMPUTE_SRVCS; do
-            mv ${SUPERVISOR_CONF_DIR}/${SRVC}.ini.disabled ${SUPERVISOR_CONF_DIR}/${SRVC}.ini
+            if [[ -f ${SUPERVISOR_CONF_DIR}/${SRVC}.ini.disabled ]]; then
+                mv ${SUPERVISOR_CONF_DIR}/${SRVC}.ini.disabled ${SUPERVISOR_CONF_DIR}/${SRVC}.ini
+            fi
         done
 fi
 
