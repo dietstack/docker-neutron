@@ -20,6 +20,9 @@ DB_HOST=${DB_HOST:-127.0.0.1}
 DB_PORT=${DB_PORT:-3306}
 DB_PASSWORD=${DB_PASSWORD:-veryS3cr3t}
 
+RABBITMQ_HOST=${RABBITMQ_HOST:-127.0.0.1}
+RABBITMQ_PORT=${RABBITMQ_PORT:-5672}
+
 MY_IP=${MY_IP:-127.0.0.1}
 NOVA_API_IP=${NOVA_API_IP:-127.0.0.1}
 NOVA_API_PORT=${NOVA_API_PORT:-8774}
@@ -110,6 +113,8 @@ if [[ $OVERRIDE -eq 0 ]]; then
                 sed -i "s/_DB_HOST_/$DB_HOST/" $CONF_DIR/$CONF
                 sed -i "s/_DB_PORT_/$DB_PORT/" $CONF_DIR/$CONF
                 sed -i "s/_DB_PASSWORD_/$DB_PASSWORD/" $CONF_DIR/$CONF
+                sed -i "s/\b_RABBITMQ_HOST_\b/$RABBITMQ_HOST/" $CONF_DIR/$CONF
+                sed -i "s/\b_RABBITMQ_PORT_\b/$RABBITMQ_PORT/" $CONF_DIR/$CONF
                 sed -i "s/\b_SERVICE_TENANT_NAME_\b/$SERVICE_TENANT_NAME/" $CONF_DIR/$CONF
                 sed -i "s/\b_SERVICE_USER_\b/$SERVICE_USER/" $CONF_DIR/$CONF
                 sed -i "s/\b_SERVICE_PASSWORD_\b/$SERVICE_PASSWORD/" $CONF_DIR/$CONF

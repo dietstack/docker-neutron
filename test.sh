@@ -73,7 +73,7 @@ echo "Starting galera container ..."
 docker run -d --net=host -e INITIALIZE_CLUSTER=1 -e MYSQL_ROOT_PASS=veryS3cr3t -e WSREP_USER=wsrepuser -e WSREP_PASS=wsreppass -e DEBUG= --name ${CONT_PREFIX}_galera galera:latest
 
 echo "Wait till galera is running ."
-wait_for_port 3306 30
+wait_for_port 3306 120
 
 echo "Starting Memcached node (tokens caching) ..."
 docker run -d --net=host -e DEBUG= --name ${CONT_PREFIX}_memcached memcached
