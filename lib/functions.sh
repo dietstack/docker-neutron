@@ -5,7 +5,7 @@ wait_for_port() {
     echo "Wait till app is bound to port $port "
     while [[ $counter -lt $timeout ]]; do
         local counter=$[counter + 1]
-        if [[ ! `ss -ntl4 | grep ":${port}"` ]]; then
+        if [[ ! `ss -ntl | grep ":${port}"` ]]; then
             echo -n ". "
         else
             break
