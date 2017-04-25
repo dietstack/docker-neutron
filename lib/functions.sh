@@ -8,6 +8,7 @@ wait_for_port() {
         if [[ ! `ss -ntl | grep ":${port}"` ]]; then
             echo -n ". "
         else
+            echo ""
             break
         fi
         sleep 1
@@ -26,30 +27,44 @@ get_docker_image_from_release() {
     local reqversion=$3
 
     local version=${reqversion}
-    if [[ "${reqversion}" -eq "latest" ]]; then
-        local version=$(wget -q -O - ${http_image_repo_url}/latest_tag.txt)
+    if [[ "${reqversion}" == "latest" ]]; then
+        local version=$(wget --timeout=5 --tries=1 -q -O - ${http_image_repo_url}/latest_tag.txt)
         echo "Remote latest version is ${version}."
     fi
 
-    if [[ ! `docker images | grep -w ${image_name} | grep -w ${version}` ]]; then
-        # docker image of requests version doesn't exists in local repository
-        local http_image_url=${http_image_repo_url}/${image_name}:${version}.tgz
-        echo "Getting ${image_name} from ${http_image_url} ..."
-        mkdir -p /tmp/${image_name}
-        rm -f /tmp/${image_name}/*
-        pushd /tmp/${image_name}
-            wget ${http_image_url}
-            image_file=$(ls -1t | head -n 1)
-            gunzip ${image_file}
-            unziped_image_file=$(ls -1t | head -n 1)
-            docker load < ${unziped_image_file}
-        popd
-        rm -rf /tmp/${image_name}
+    if [[ -z ${version} ]]; then
+        # if latest tag from release server is not accessible it means that release server is not accessible, we
+        # are going to check whether reqversion is in local repository. If yes, we will use that version.
+        # Usable when dev is somewhere where release server is not accessible (home) and he still want's to
+        # use localy cached images for development
+        if [[  `docker images | grep -w ${image_name} | grep -w ${reqversion}` ]]; then
+            echo "Version from release server is not accessible, but ${image_name}:${reqversion} is found in local repository."
+            return 0
+        else
+            echo "Version from release server is not accessible!"
+            return 1
+        fi
     else
-        echo "Docker image ${image_name}:${version} found in local repository."
+        if [[ ! `docker images | grep -w ${image_name} | grep -w ${version}` ]]; then
+            # docker image of requests version doesn't exists in local repository
+            local http_image_url=${http_image_repo_url}/${image_name}:${version}.tgz
+            echo "Getting ${image_name} from ${http_image_url} ..."
+            mkdir -p /tmp/${image_name}
+            rm -f /tmp/${image_name}/*
+            pushd /tmp/${image_name}
+                wget ${http_image_url}
+                image_file=$(ls -1t | head -n 1)
+                gunzip ${image_file}
+                unziped_image_file=$(ls -1t | head -n 1)
+                docker load < ${unziped_image_file}
+            popd
+            rm -rf /tmp/${image_name}
+        else
+            echo "Docker image ${image_name}:${version} found in local repository."
+        fi
+        dimage=$(docker images | grep ${image_name} | grep ${version} | head -n 1 | awk '{print $1}')
+        docker tag ${dimage}:${version} ${image_name}:latest
     fi
-    dimage=$(docker images | grep ${image_name} | grep ${version} | awk '{print $1}')
-    docker tag ${dimage}:${version} ${image_name}:latest
 }
 
 
@@ -60,7 +75,8 @@ create_db_osadmin() {
     local USER_NAME=$2
     local ROOT_DB_PASSWD=$3
     local SVC_DB_PASSWD=$4
-    MYSQL_CMD="docker run --net=host osadmin mysql -h 127.0.0.1 -P 3306 -u root -p$ROOT_DB_PASSWD"
+    echo "Creating $DB_NAME database ..."
+    MYSQL_CMD="docker run --rm --net=host osadmin mysql -h 127.0.0.1 -P 3306 -u root -p$ROOT_DB_PASSWD"
     $MYSQL_CMD -e "CREATE DATABASE $DB_NAME;"
     $MYSQL_CMD -e "CREATE USER '$USER_NAME'@'%' IDENTIFIED BY '$SVC_DB_PASSWD';"
     $MYSQL_CMD -e "GRANT ALL PRIVILEGES ON $DB_NAME.* TO '$USER_NAME'@'%' WITH GRANT OPTION;"
