@@ -4,7 +4,7 @@ RELEASE_REPO=172.27.9.130
 . lib/functions.sh
 
 # get osmaster docker image
-get_docker_image_from_release osmaster http://${RELEASE_REPO}/docker-osmaster latest
+get_docker_image_from_release osmaster http://${RELEASE_REPO}/docker-osmaster/master latest
 
 # Universal build script for docker containers
 # Git project name has to start with 'docker-'

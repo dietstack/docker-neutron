@@ -1,10 +1,6 @@
 FROM osmaster
 MAINTAINER Kamil Madac (kamil.madac@t-systems.sk)
 
-ARG http_proxy
-ARG https_proxy
-ARG no_proxy
-
 # Source codes to download
 ENV repo="https://github.com/openstack/neutron" branch="stable/newton" commit=""
 
