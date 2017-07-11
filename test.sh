@@ -131,7 +131,7 @@ fi
 set -e
 
 echo "Configure External Networking ..."
-ip a s | grep -q br-ex || { brctl addbr br-ex && ip link set dev br-ex up; }
+ip a s | grep -q br-ex || { sudo brctl addbr br-ex && sudo ip link set dev br-ex up; }
 
 echo "Starting neutron-controller container"
 docker run -d --net=host --privileged \
