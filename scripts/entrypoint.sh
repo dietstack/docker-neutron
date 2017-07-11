@@ -95,15 +95,16 @@ CONF_DIR="/etc/neutron"
 SUPERVISOR_CONF_DIR="/etc/supervisor.d"
 OVERRIDE_DIR="/neutron-override"
 CONF_FILES=(`cd $CONF_DIR; find . -maxdepth 3 -type f`)
+OVERRIDE_CONF_FILES=(`cd $OVERRIDE_DIR; find . -maxdepth 3 -type f`)
 CONTROL_SRVCS="neutron-server neutron-dhcp-agent neutron-l3-agent neutron-metadata-agent"
 COMPUTE_SRVCS="neutron-linuxbridge-agent"
 
 # check if external configs are provided
 echo "$LOG_MESSAGE Checking if external config is provided.."
-if [[ -f "$OVERRIDE_DIR/${CONF_FILES[0]}" ]]; then
+if [[ "$(ls -A $OVERRIDE_DIR)" ]]; then
         echo "$LOG_MESSAGE  ==> external config found!. Using it."
         OVERRIDE=1
-        for CONF in ${CONF_FILES[*]}; do
+        for CONF in ${OVERRIDE_CONF_FILES[*]}; do
                 rm -f "$CONF_DIR/$CONF"
                 ln -s "$OVERRIDE_DIR/$CONF" "$CONF_DIR/$CONF"
         done
