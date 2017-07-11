@@ -120,15 +120,15 @@ if [ $ret -ne 0 ]; then
 fi
 
 # bootstrap keystone data (endpoints/users/services)
+set +e
 docker run --net=host --rm \
            $http_proxy_args osadmin /bin/bash -c ". /app/tokenrc; bash /app/bootstrap.sh"
-
 ret=$?
-if [ $ret -ne 0 ]; then
+if [ $ret -ne 0 ] && [ $ret -ne 128 ]; then
     echo "Error: Keystone bootstrap error ${ret}!"
     exit $ret
 fi
-
+set -e
 
 echo "Configure External Networking ..."
 ip a s | grep -q br-ex || { brctl addbr br-ex && ip link set dev br-ex up; }
