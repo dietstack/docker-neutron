@@ -2,6 +2,7 @@ FROM osmaster
 MAINTAINER Kamil Madac (kamil.madac@t-systems.sk)
 
 # Source codes to download
+ENV srv_name=neutron
 ENV repo="https://github.com/openstack/neutron" branch="stable/newton" commit="f710a34b7"
 
 # Download source codes
