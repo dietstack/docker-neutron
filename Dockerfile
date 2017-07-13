@@ -20,7 +20,7 @@ RUN /patches/patch.sh
 
 # Install neutron with dependencies
 RUN cd neutron; apt-get update; \
-    apt-get install -y --no-install-recommends sudo bridge-utils openvswitch-switch dnsmasq dnsmasq-utils iptables ipset ebtables; \
+    apt-get install -y --no-install-recommends sudo bridge-utils openvswitch-switch dnsmasq dnsmasq-utils iptables ipset ebtables keepalived; \
     pip install -r requirements.txt -c /requirements/upper-constraints.txt; \
     pip install supervisor python-memcached py2-ipaddress; \
     python setup.py install; \
