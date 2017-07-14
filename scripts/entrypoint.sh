@@ -12,12 +12,6 @@ fi
 # if true, CONTROL_SRVCS will be activated, if false, COMPUTE_SRVCS will be activated
 NEUTRON_CONTROLLER=${NEUTRON_CONTROLLER:-true}
 
-# If we want to run openvswitch agents instead of linuxbridge agents set it to 1
-# container will not prepare config files OVS configuration, and custom config files
-# needs to be prepared in neutron-override derectory
-# Added because in HA/DVR configuration we need to use OVS
-NEUTRON_OVS_AGENTS=${NEUTRON_OVS_AGENTS:-false}
-
 # define variable defaults
 
 CPU_NUM=$(grep -c ^processor /proc/cpuinfo)
@@ -103,10 +97,7 @@ OVERRIDE_DIR="/neutron-override"
 CONF_FILES=(`cd $CONF_DIR; find . -maxdepth 3 -type f`)
 OVERRIDE_CONF_FILES=(`cd $OVERRIDE_DIR; find . -maxdepth 3 -type f`)
 CONTROL_SRVCS="neutron-server neutron-dhcp-agent neutron-l3-agent neutron-metadata-agent"
-COMPUTE_SRVCS="neutron-linuxbridge-agent"
-if [[ $NEUTRON_OVS_AGENTS == "true" ]]; then
-  COMPUTE_SRVCS="neutron-openvswitch-agent"
-fi
+COMPUTE_SRVCS=${COMPUTE_SRVCS:-"neutron-linuxbridge-agent"}
 
 # check if external configs are provided
 echo "$LOG_MESSAGE Checking if external config is provided.."
