@@ -1,2 +1,5 @@
 [program:neutron-l3-agent]
 command=neutron-l3-agent --config-file /etc/neutron/neutron.conf --config-file /etc/neutron/l3_agent.ini
+redirect_stderr=true
+stdout_logfile=/var/log/supervisord/neutron-l3-agent.log
+

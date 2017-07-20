@@ -1,2 +1,5 @@
 [program:neutron-openvswitch-agent]
 command=neutron-openvswitch-agent --config-file /etc/neutron/neutron.conf  --config-file=/etc/neutron/plugins/ml2/ml2_conf.ini --config-file=/etc/neutron/plugins/ml2/openvswitch_agent.ini
+redirect_stderr=true
+stdout_logfile=/var/log/supervisord/neutron-openvswitch-agent.log
+
