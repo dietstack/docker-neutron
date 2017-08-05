@@ -2,10 +2,8 @@
 # Integration test for glance service
 # Test runs mysql,memcached,keystone and glance container and checks whether glance is running on public and admin ports
 
-GIT_REPO=172.27.10.10
-RELEASE_REPO=172.27.9.130
+DOCKER_PROJ_NAME=${DOCKER_PROJ_NAME:-''}
 CONT_PREFIX=test
-BRANCH=master
 
 . lib/functions.sh
 
@@ -13,14 +11,14 @@ http_proxy_args="-e http_proxy=${http_proxy:-} -e https_proxy=${https_proxy:-} -
 
 cleanup() {
     echo "Clean up ..."
-    docker stop ${CONT_PREFIX}_galera
+    docker stop ${CONT_PREFIX}_mariadb
     docker stop ${CONT_PREFIX}_memcached
     docker stop ${CONT_PREFIX}_rabbitmq
     docker stop ${CONT_PREFIX}_keystone
     docker stop ${CONT_PREFIX}_neutron-controller
     docker stop ${CONT_PREFIX}_neutron-compute
 
-    docker rm ${CONT_PREFIX}_galera
+    docker rm ${CONT_PREFIX}_mariadb
     docker rm ${CONT_PREFIX}_memcached
     docker rm ${CONT_PREFIX}_rabbitmq
     docker rm ${CONT_PREFIX}_keystone
@@ -50,37 +48,25 @@ wait_for_linuxbridge() {
 
 cleanup
 
-##### Download/Build containers
-
-# pull galera docker image
-get_docker_image_from_release galera http://${RELEASE_REPO}/docker-galera/${BRANCH} latest
-
-# pull rabbitmq docker image
-get_docker_image_from_release rabbitmq http://${RELEASE_REPO}/docker-rabbitmq/${BRANCH} latest
-
-# pull osmaster docker image
-get_docker_image_from_release osmaster http://${RELEASE_REPO}/docker-osmaster/${BRANCH} latest
-
-# pull keystone image
-get_docker_image_from_release keystone http://${RELEASE_REPO}/docker-keystone/${BRANCH} latest
-
-# pull osadmin docker image
-get_docker_image_from_release osadmin http://${RELEASE_REPO}/docker-osadmin/${BRANCH} latest
-
 ##### Start Containers
 
-echo "Starting galera container ..."
-docker run -d --net=host -e INITIALIZE_CLUSTER=1 -e MYSQL_ROOT_PASS=veryS3cr3t -e WSREP_USER=wsrepuser -e WSREP_PASS=wsreppass -e DEBUG= --name ${CONT_PREFIX}_galera galera:latest
+echo "Starting mariadb container ..."
+docker run  --net=host -d -e MYSQL_ROOT_PASSWORD=veryS3cr3t --name ${CONT_PREFIX}_mariadb \
+       mariadb:10.1
 
-echo "Wait till galera is running ."
+echo "Wait till mariadb is running ."
 wait_for_port 3306 120
 
 echo "Starting Memcached node (tokens caching) ..."
 docker run -d --net=host -e DEBUG= --name ${CONT_PREFIX}_memcached memcached
 
+echo "Wait till Memcached is running ."
+wait_for_port 11211 30
+
 echo "Starting RabbitMQ container ..."
 docker run -d --net=host -e DEBUG= --name ${CONT_PREFIX}_rabbitmq rabbitmq
 
+echo "Wait till Rabbitmq is running ."
 wait_for_port 5672 120
 
 # create openstack user in rabbitmq
@@ -101,7 +87,7 @@ docker run -d --net=host \
            -e DEBUG="true" \
            -e DB_SYNC="true" \
            $http_proxy_args \
-           --name ${CONT_PREFIX}_keystone keystone:latest
+           --name ${CONT_PREFIX}_keystone ${DOCKER_PROJ_NAME}keystone:latest
 
 echo "Wait till keystone is running ."
 
@@ -122,7 +108,7 @@ fi
 # bootstrap keystone data (endpoints/users/services)
 set +e
 docker run --net=host --rm \
-           $http_proxy_args osadmin /bin/bash -c ". /app/tokenrc; bash /app/bootstrap.sh"
+           $http_proxy_args ${DOCKER_PROJ_NAME}osadmin /bin/bash -c ". /app/tokenrc; bash /app/bootstrap.sh"
 ret=$?
 if [ $ret -ne 0 ] && [ $ret -ne 128 ]; then
     echo "Error: Keystone bootstrap error ${ret}!"
@@ -144,7 +130,7 @@ docker run -d --net=host --privileged \
            -v /lib/modules:/lib/modules \
            -v /run/netns:/run/netns:shared \
            --name ${CONT_PREFIX}_neutron-controller \
-           neutron:latest
+           ${DOCKER_PROJ_NAME}neutron:latest
 
 wait_for_port 9696 120
 ret=$?
@@ -163,7 +149,7 @@ docker run -d --net=host --privileged \
            $http_proxy_args \
            -v /lib/modules:/lib/modules \
            --name ${CONT_PREFIX}_neutron-compute \
-           neutron:latest
+           ${DOCKER_PROJ_NAME}neutron:latest
 
 
 wait_for_linuxbridge 120
