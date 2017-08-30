@@ -32,7 +32,7 @@ wait_for_linuxbridge() {
     echo "Wait till linuxbridge agent is registred to neutron..."
     while [[ $counter -lt $timeout ]]; do
         local counter=$[counter + 5]
-        local OUT=$(docker run --net=host --rm $http_proxy_args osadmin /bin/bash -c ". /app/adminrc; openstack network agent list --format csv | grep neutron-linuxbridge-agent | cut -d"," -f 6" | tail -n 1)
+        local OUT=$(docker run --net=host --rm $http_proxy_args ${DOCKER_PROJ_NAME}osadmin /bin/bash -c ". /app/adminrc; openstack network agent list --format csv | grep neutron-linuxbridge-agent | cut -d"," -f 6" | tail -n 1)
         if [[ $OUT != '"UP"' ]]; then
             echo -n ". "
         else
