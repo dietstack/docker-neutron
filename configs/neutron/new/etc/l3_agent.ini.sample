@@ -13,79 +13,149 @@
 #ovs_use_veth = false
 
 # The driver used to manage the virtual interface. (string value)
-interface_driver = neutron.agent.linux.interface.BridgeInterfaceDriver
+#interface_driver = <None>
 
 # Timeout in seconds for ovs-vsctl commands. If the timeout expires, ovs
 # commands will fail with ALARMCLOCK error. (integer value)
 #ovs_vsctl_timeout = 10
 
 #
-# From neutron.dhcp.agent
+# From neutron.l3.agent
 #
 
-# The DHCP agent will resync its state with Neutron to recover from any
-# transient notification or RPC errors. The interval is number of seconds
-# between attempts. (integer value)
-#resync_interval = 5
+# The working mode for the agent. Allowed modes are: 'legacy' - this preserves
+# the existing behavior where the L3 agent is deployed on a centralized
+# networking node to provide L3 services like DNAT, and SNAT. Use this mode if
+# you do not want to adopt DVR. 'dvr' - this mode enables DVR functionality and
+# must be used for an L3 agent that runs on a compute host. 'dvr_snat' - this
+# enables centralized SNAT support in conjunction with DVR.  This mode must be
+# used for an L3 agent running on a centralized node (or in single-host
+# deployments, e.g. devstack). 'dvr_no_external' - this mode enables only
+# East/West DVR routing functionality for a L3 agent that runs on a compute
+# host, the North/South functionality such as DNAT and SNAT will be provided by
+# the centralized network node that is running in 'dvr_snat' mode. This mode
+# should be used when there is no external network connectivity on the compute
+# host. (string value)
+# Allowed values: dvr, dvr_snat, legacy, dvr_no_external
+#agent_mode = legacy
 
-# The driver used to manage the DHCP server. (string value)
-dhcp_driver = neutron.agent.linux.dhcp.Dnsmasq
+# TCP Port used by Neutron metadata namespace proxy. (port value)
+# Minimum value: 0
+# Maximum value: 65535
+#metadata_port = 9697
 
-# The DHCP server can assist with providing metadata support on isolated
-# networks. Setting this value to True will cause the DHCP server to append
-# specific host routes to the DHCP request. The metadata service will only be
-# activated when the subnet does not contain any router port. The guest
-# instance must be configured to request host routes via DHCP (Option 121).
-# This option doesn't have any effect when force_metadata is set to True.
-# (boolean value)
-enable_isolated_metadata = true
+# Indicates that this L3 agent should also handle routers that do not have an
+# external network gateway configured. This option should be True only for a
+# single agent in a Neutron deployment, and may be False for all agents if all
+# routers must have an external network gateway. (boolean value)
+#handle_internal_only_routers = true
 
-# In some cases the Neutron router is not present to provide the metadata IP
-# but the DHCP server can be used to provide this info. Setting this value will
-# force the DHCP server to append specific host routes to the DHCP request. If
-# this option is set, then the metadata service will be activated for all the
-# networks. (boolean value)
-#force_metadata = false
+# DEPRECATED: When external_network_bridge is set, each L3 agent can be
+# associated with no more than one external network. This value should be set
+# to the UUID of that external network. To allow L3 agent support multiple
+# external networks, both the external_network_bridge and
+# gateway_external_network_id must be left empty. (string value)
+# This option is deprecated for removal.
+# Its value may be silently ignored in the future.
+#gateway_external_network_id =
 
-# Allows for serving metadata requests coming from a dedicated metadata access
-# network whose CIDR is 169.254.169.254/16 (or larger prefix), and is connected
-# to a Neutron router from which the VMs send metadata:1 request. In this case
-# DHCP Option 121 will not be injected in VMs, as they will be able to reach
-# 169.254.169.254 through a router. This option requires
-# enable_isolated_metadata = True. (boolean value)
-#enable_metadata_network = false
+# With IPv6, the network used for the external gateway does not need to have an
+# associated subnet, since the automatically assigned link-local address (LLA)
+# can be used. However, an IPv6 gateway address is needed for use as the next-
+# hop for the default route. If no IPv6 gateway address is configured here,
+# (and only then) the neutron router will be configured to get its default
+# route from router advertisements (RAs) from the upstream router; in which
+# case the upstream router must also be configured to send these RAs. The
+# ipv6_gateway, when configured, should be the LLA of the interface on the
+# upstream router. If a next-hop using a global unique address (GUA) is
+# desired, it needs to be done via a subnet allocated to the network and not
+# through this parameter.  (string value)
+#ipv6_gateway =
 
-# Number of threads to use during sync process. Should not exceed connection
-# pool size configured on server. (integer value)
-#num_sync_threads = 4
+# Driver used for ipv6 prefix delegation. This needs to be an entry point
+# defined in the neutron.agent.linux.pd_drivers namespace. See setup.cfg for
+# entry points included with the neutron source. (string value)
+#prefix_delegation_driver = dibbler
 
-# Location to store DHCP server config files. (string value)
-#dhcp_confs = $state_path/dhcp
+# Allow running metadata proxy. (boolean value)
+#enable_metadata_proxy = true
 
-# Override the default dnsmasq settings with this file. (string value)
-#dnsmasq_config_file =
-
-# Comma-separated list of the DNS servers which will be used as forwarders.
-# (list value)
-#dnsmasq_dns_servers = <None>
-
-# Base log dir for dnsmasq logging. The log contains DHCP and DNS log
-# information and is useful for debugging issues with either DHCP or DNS. If
-# this section is null, disable dnsmasq log. (string value)
-#dnsmasq_base_log_dir = <None>
-
-# Enables the dnsmasq service to provide name resolution for instances via DNS
-# resolvers on the host running the DHCP agent. Effectively removes the '--no-
-# resolv' option from the dnsmasq process arguments. Adding custom DNS
-# resolvers to the 'dnsmasq_dns_servers' option disables this feature. (boolean
+# Iptables mangle mark used to mark metadata valid requests. This mark will be
+# masked with 0xffff so that only the lower 16 bits will be used. (string
 # value)
-#dnsmasq_local_resolv = false
+#metadata_access_mark = 0x1
 
-# Limit number of leases to prevent a denial-of-service. (integer value)
-#dnsmasq_lease_max = 16777216
+# Iptables mangle mark used to mark ingress from external network. This mark
+# will be masked with 0xffff so that only the lower 16 bits will be used.
+# (string value)
+#external_ingress_mark = 0x2
 
-# Use broadcast in DHCP replies. (boolean value)
-#dhcp_broadcast_reply = false
+# DEPRECATED: Name of bridge used for external network traffic. When this
+# parameter is set, the L3 agent will plug an interface directly into an
+# external bridge which will not allow any wiring by the L2 agent. Using this
+# will result in incorrect port statuses. This option is deprecated and will be
+# removed in Ocata. (string value)
+# This option is deprecated for removal.
+# Its value may be silently ignored in the future.
+#external_network_bridge =
+
+# Seconds between running periodic tasks. (integer value)
+#periodic_interval = 40
+
+# Number of separate API worker processes for service. If not specified, the
+# default is equal to the number of CPUs available for best performance.
+# (integer value)
+#api_workers = <None>
+
+# Number of RPC worker processes for service. (integer value)
+#rpc_workers = 1
+
+# Number of RPC worker processes dedicated to state reports queue. (integer
+# value)
+#rpc_state_report_workers = 1
+
+# Range of seconds to randomly delay when starting the periodic task scheduler
+# to reduce stampeding. (Disable by setting to 0) (integer value)
+#periodic_fuzzy_delay = 5
+
+# Location to store keepalived/conntrackd config files (string value)
+#ha_confs_path = $state_path/ha_confs
+
+# VRRP authentication type (string value)
+# Allowed values: AH, PASS
+#ha_vrrp_auth_type = PASS
+
+# VRRP authentication password (string value)
+#ha_vrrp_auth_password = <None>
+
+# The advertisement interval in seconds (integer value)
+#ha_vrrp_advert_int = 2
+
+# Number of concurrent threads for keepalived server connection requests. More
+# threads create a higher CPU load on the agent node. (integer value)
+# Minimum value: 1
+#ha_keepalived_state_change_server_threads = (1 + <num_of_cpus>) / 2
+
+# The VRRP health check interval in seconds. Values > 0 enable VRRP health
+# checks. Setting it to 0 disables VRRP health checks. Recommended value is 5.
+# This will cause pings to be sent to the gateway IP address(es) - requires
+# ICMP_ECHO_REQUEST to be enabled on the gateway. If gateway fails, all routers
+# will be reported as master, and master election will be repeated in round-
+# robin fashion, until one of the router restore the gateway connection.
+# (integer value)
+#ha_vrrp_health_check_interval = 0
+
+# Service to handle DHCPv6 Prefix delegation. (string value)
+#pd_dhcp_driver = dibbler
+
+# Location to store IPv6 RA config files (string value)
+#ra_confs = $state_path/ra
+
+# MinRtrAdvInterval setting for radvd.conf (integer value)
+#min_rtr_adv_interval = 30
+
+# MaxRtrAdvInterval setting for radvd.conf (integer value)
+#max_rtr_adv_interval = 100
 
 #
 # From oslo.log
@@ -94,7 +164,7 @@ enable_isolated_metadata = true
 # If set to true, the logging level will be set to DEBUG instead of the default
 # INFO level. (boolean value)
 # Note: This option can be changed without restarting.
-debug = _DEBUG_OPT_
+#debug = false
 
 # The name of a logging configuration file. This file is appended to any
 # existing logging configuration files. For details about logging configuration
@@ -217,6 +287,13 @@ debug = _DEBUG_OPT_
 
 # Log agent heartbeats (boolean value)
 #log_agent_heartbeats = false
+
+#
+# From neutron.l3.agent
+#
+
+# Extensions list to use (list value)
+#extensions =
 
 
 [ovs]

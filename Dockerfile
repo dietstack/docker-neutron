@@ -9,7 +9,7 @@ COPY patches/* /patches/
 RUN echo 'APT::Install-Recommends "false";' >> /etc/apt/apt.conf && \
     echo 'APT::Get::Install-Suggests "false";' >> /etc/apt/apt.conf && \
     apt update; apt install -y ca-certificates wget python libpython2.7 libxml2-dev sudo bridge-utils \
-      openvswitch-switch dnsmasq dnsmasq-utils iptables ipset iproute2 ebtables keepalived netbase && \
+      openvswitch-switch dnsmasq dnsmasq-utils iptables ipset iproute2 ebtables keepalived haproxy netbase && \
     update-ca-certificates; \
     wget --no-check-certificate https://bootstrap.pypa.io/get-pip.py; \
     python get-pip.py; \
@@ -39,12 +39,14 @@ RUN apt update; apt install -y $BUILD_PACKAGES && \
         git clone $REPO --single-branch --depth=1 --branch $BRANCH; \
       fi; \
       cd /$SVC_NAME; pip install -r requirements.txt -c /app/upper-constraints.txt && python setup.py install && \
-      rm -rf /$SVC_NAME/.git; \
+      if false; then rm -rf /$SVC_NAME/.git; fi\
     fi; \
-    pip install supervisor PyMySQL python-memcached py2-ipaddress && \
-    apt remove -y --auto-remove $BUILD_PACKAGES &&  \
-    apt-get clean && apt autoremove && \
-    rm -rf /var/lib/apt/lists/* && rm -rf /root/.cache
+    pip install supervisor PyMySQL python-memcached py2-ipaddress 
+
+#&& \
+#    apt remove -y --auto-remove $BUILD_PACKAGES &&  \
+#    apt-get clean && apt autoremove && \
+#    rm -rf /var/lib/apt/lists/* && rm -rf /root/.cache
 
 # prepare directories for supervisor
 RUN mkdir -p /etc/supervisor.d /var/log/supervisord
